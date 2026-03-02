@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends , HTTPException ,status
+from fastapi import FastAPI, Depends , HTTPException ,status,Query
 from sqlalchemy.orm import Session
 import model , schemas ,password
 from database import get_db
@@ -18,7 +18,30 @@ def create_access_token(data: dict):
 
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+
+
+
 app = FastAPI()
+
+@app.get("/products")
+def get_products(
+    page:int = Query(1, ge=1),
+    size:int = Query(10,ge=1,le=50),
+    db:Session = Depends(get_db)
+):
+    skip = (page - 1)*size
+
+    notes = db.query(model.Product).offset(skip).limit(size).all()
+    total = db.query(model.Product).count()
+
+    return {
+        "page":page,
+        "size":size,
+        "total_records":total,
+        "total_pages":(total + size - 1) // size,
+        "data":notes
+
+    }
 
 #!--------User----------
 
