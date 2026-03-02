@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends , HTTPException ,status,Query
+from typing import Optional
 from sqlalchemy.orm import Session
 import model , schemas ,password
 from database import get_db
@@ -42,6 +43,26 @@ def get_products(
         "data":notes
 
     }
+
+@app.get("/product",tags=['filter'])
+def filter_product(
+    min_price:Optional[int] = Query(None),
+    max_price:Optional[int] = Query(None),
+    brand :Optional[str] = Query(None),
+    db:Session = Depends(get_db)
+    ):
+    query = db.query(model.Product)
+
+    if max_price is not None:
+        query = query.filter(model.Product.price >= max_price)
+
+    if min_price is not None:
+        query = query.filter(model.Product.price >= min_price)
+
+    if brand :
+        query = query.filter(model.Product.brand == brand)
+
+    return query.all()
 
 #!--------User----------
 
