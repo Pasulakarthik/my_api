@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends , HTTPException ,status,Query
 from typing import Optional
 from sqlalchemy.orm import Session
 import model , schemas ,password
-from database import get_db
+from database import get_db , engine
 from datetime import timedelta , datetime
 from jose import JWTError , jwt
 from fastapi.security import OAuth2PasswordRequestForm , OAuth2PasswordBearer
@@ -23,6 +23,9 @@ def create_access_token(data: dict):
 
 
 app = FastAPI()
+
+model.Base.metadata.create_all(bind=engine)
+
 
 @app.get("/products")
 def get_products(
