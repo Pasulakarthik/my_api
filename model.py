@@ -17,12 +17,28 @@ class Product(Base):
     name = Column(String, nullable=False)
     price = Column(Integer, nullable=False)
     brand = Column(String, nullable=False)
+    stock = Column(Integer , nullable=False)
 
 
 class Cart(Base):
     __tablename__ = "cart"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("table.id"))
-    product_id = Column(Integer,ForeignKey("Products.id"))
-    quantity = Column(Integer,default=1)
+
+    id =  Column(Integer, primary_key=True, index=True)   
+    name = Column(String, nullable=False)
+    price = Column(Integer, nullable=False)
+    brand = Column(String, nullable=False)
+    quantity = Column(Integer , default=1)
+    user_id = Column(Integer,ForeignKey("table.id"))
+    Product_id = Column(Integer,ForeignKey("Products.id"))
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id =  Column(Integer, primary_key=True, index=True)   
+    name = Column(String, nullable=False)
+    price = Column(Integer, nullable=False)
+    brand = Column(String, nullable=False)
+    quantity = Column(Integer , default=1)
+    user_id = Column(Integer,ForeignKey("table.id"))
+    Product_id = Column(Integer,ForeignKey("Products.id"))

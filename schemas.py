@@ -22,11 +22,14 @@ class ProductCreate(BaseModel):
     name: str
     price: int
     brand: str
+    stock: int
+
 
 class ProductIn(BaseModel):
     name: str
     price: int
     brand: str
+    stock: int
     
 class ProductOut(ProductCreate):
     id: int
@@ -38,10 +41,5 @@ class ProductUpdate(BaseModel):
     name: str
     price: int
     brand: str
+    stock: int
 
-
-#!-----------Cart------------
-
-class AddToCart(BaseModel):
-    product_id: int
-    quantity: int = 1
