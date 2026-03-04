@@ -1,0 +1,7 @@
+uvicorn   
+SQLAlchemy 
+fastapi
+passlib[argon2]
+email-validator
+psycopg2-binary
+python-jose
