@@ -18,6 +18,7 @@ class Product(Base):
     price = Column(Integer, nullable=False)
     brand = Column(String, nullable=False)
     stock = Column(Integer , nullable=False)
+    category = Column(String,nullable=False)
 
 
 class Cart(Base):
