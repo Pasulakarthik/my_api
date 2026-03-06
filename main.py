@@ -367,6 +367,8 @@ def Place_Order(quantity:int,product_id:int ,background_tasks:BackgroundTasks ,d
     db.refresh(new)
 
     background_tasks.add_task(order, current_user.email)
+    model.Product.stock -= quantity
+
 
 
     return {
