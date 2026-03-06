@@ -8,6 +8,10 @@ from jose import JWTError , jwt
 from fastapi.security import OAuth2PasswordRequestForm , OAuth2PasswordBearer
 from datetime import timedelta
 import logging , time
+from sqlalchemy import and_
+from database import engine, Base 
+import model
+
 
 
 SECRET_KEY = "tINXBSTA0iXAlSyBsoAzJK8BuDtbZRF2OEONJbh7yEw"
@@ -32,12 +36,12 @@ def create_access_token(data: dict):
 
 app = FastAPI()
 
-# model.Base.metadata.create_all(bind=engine)
+model.Base.metadata.create_all(bind=engine)
 
 def send_email(email:str):
     logging.info(f"Sending welcome email to {email}")
 
-@app.get("/product")
+@app.get("/product",tags=['Pagination'])
 def get_products(
     page:int = Query(1, ge=1),
     size:int = Query(10,ge=1,le=50),
@@ -57,25 +61,46 @@ def get_products(
 
     }
 
-@app.get("/product",tags=['filter'])
-def filter_product(
-    min_price:Optional[int] = Query(None),
-    max_price:Optional[int] = Query(None),
-    brand :Optional[str] = Query(None),
-    db:Session = Depends(get_db)
-    ):
+
+
+@app.get("/filter", tags=["Filter"])
+def Filter_products(
+    min_price: Optional[int] = Query(None, ge=0),
+    max_price: Optional[int] = Query(None, ge=0),
+    category: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     query = db.query(model.Product)
 
-    if max_price is not None:
-        query = query.filter(model.Product.price >= max_price)
+    #  Validate price range
+    if min_price is not None and max_price is not None:
+        if min_price > max_price:
+            raise HTTPException(
+                status_code=400,
+                detail="min_price cannot be greater than max_price"
+            )
 
+    #  Apply min price filter
     if min_price is not None:
         query = query.filter(model.Product.price >= min_price)
 
-    if brand :
-        query = query.filter(model.Product.brand == brand)
+    #  Apply max price filter
+    if max_price is not None:
+        query = query.filter(model.Product.price <= max_price)
 
-    return query.all()
+    #  Apply category filter (case insensitive)
+    if category:
+        query = query.filter(model.Product.category.ilike(f"%{category}%"))
+
+    products = query.all()
+
+    return {
+        "count": len(products),
+        "data": products
+    }
+
+
+
 
 #!--------User----------
 
@@ -178,7 +203,7 @@ def get_all_users_and_admins(user : model.User = Depends(admin_only),db:Session 
     return db.query(model.User).all()
 
 
-@app.delete("/Delete_User/{email}",tags=["signin"])
+@app.delete("/Delete_User",tags=["signin"])
 def delete(id:int, db:Session = Depends(get_db),current_user: model.User = Depends(current_user)):
 
     if current_user.role != "admin":
@@ -197,13 +222,13 @@ def delete(id:int, db:Session = Depends(get_db),current_user: model.User = Depen
 #!--------Store----------
 
 
-@app.post("/admin/{email}", response_model=schemas.ProductOut,tags=["Store"])
-def add_product(email:str,product:schemas.ProductCreate, db: Session = Depends(get_db),current_user: model.User = Depends(current_user)):
+@app.post("/admin/", response_model=schemas.ProductOut,tags=["Store"])
+def add_product(product:schemas.ProductCreate, db: Session = Depends(get_db),current_user: model.User = Depends(current_user)):
 
     if current_user.role != "admin":
         raise HTTPException(status_code=403,detail="Admin only")
     
-    user = db.query(model.User).filter(model.User.email == email).first()
+    user = db.query(model.User).filter(model.User.email == current_user.email).first()
     
     if not user:
         raise HTTPException(status_code=401,detail="User not found")
@@ -212,7 +237,8 @@ def add_product(email:str,product:schemas.ProductCreate, db: Session = Depends(g
         name = product.name,
         price = product.price,
         brand = product.brand,
-        stock = product.stock
+        stock = product.stock,
+        category = product.category
     )
     db.add(new)
     db.commit()
@@ -248,13 +274,13 @@ def update_product(product_id: int, data: schemas.ProductUpdate, db: Session = D
     return {"msg": "Product updated"}
 
 
-@app.delete("/admin/{email}",tags=["Store"])
-def delete_product(email:str,product_id: int, db: Session = Depends(get_db),current_user: model.User = Depends(current_user)):
+@app.delete("/admin",tags=["Store"])
+def delete_product(product_id: int, db: Session = Depends(get_db),current_user: model.User = Depends(current_user)):
 
     if current_user.role != "admin":
         raise HTTPException(status_code=403,detail="Admin only")
     
-    user = db.query(model.User).filter(model.User.email == email).first()
+    user = db.query(model.User).filter(model.User.email == current_user.email).first()
     
     if not user:
         raise HTTPException(status_code=401,detail="User not found")

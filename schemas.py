@@ -23,6 +23,7 @@ class ProductCreate(BaseModel):
     price: int
     brand: str
     stock: int
+    category: str
 
 
 class ProductIn(BaseModel):
