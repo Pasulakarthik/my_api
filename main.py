@@ -49,7 +49,7 @@ def get_products(
 ):
     skip = (page - 1)*size
 
-    notes = db.query(model.Product).offset(skip).limit(size).all()
+    products = db.query(model.Product).offset(skip).limit(size).all()
     total = db.query(model.Product).count()
 
     return {
@@ -57,7 +57,7 @@ def get_products(
         "size":size,
         "total_records":total,
         "total_pages":(total + size - 1) // size,
-        "data":notes
+        "data":products
 
     }
 
@@ -117,7 +117,7 @@ def register(user:schemas.UserCreate ,background_tasks:BackgroundTasks ,db:Sessi
         name= user.name,
         email= user.email,
         hashed_password= hash_password,
-        role =  user.role
+        role =  user.role.lower()
     )
 
     db.add(new_user)
@@ -296,6 +296,9 @@ def delete_product(product_id: int, db: Session = Depends(get_db),current_user: 
 
 #!---------------Shopping------------------
 
+#?---------------Cart------------------
+
+
 @app.post("/AddToCart/{quantity}",tags=['shopping'])
 def AddToCart(quantity:int,product_id:int,db:Session = Depends(get_db), current_user: model.User = Depends(current_user)):
     product = db.query(model.Product).filter(model.Product.id == product_id).first()
@@ -342,18 +345,38 @@ def get_cart(
 
     return cart
 
+@app.delete("/remove_cart/{id}",tags=['shopping'])
+def delete_cart(id: int, db:Session = Depends(get_db),current_user: model.User = Depends(current_user)):
+    cart = db.query(model.Cart).filter(model.Cart.id == id).first()
+    if not cart:
+        raise HTTPException(status_code=400, detail=f"No cart item found with this {id} id")
+    
+    db.delete(cart)
+    db.commit()
+    return {"msg":"cart item deleted"}
+
+
+
+#?---------------Orders------------------
+
+
 def order(email:str,current_user: model.User = Depends(current_user) ):
     logging.info(f"order placed by the user with  gmail {email}")
 
 @app.post("/order",tags=['shopping'])
 def Place_Order(quantity:int,product_id:int ,background_tasks:BackgroundTasks ,db:Session = Depends(get_db), current_user: model.User = Depends(current_user)):
+    existing = db.query(model.Order).filter(model.Order.Product_id == product_id,model.Order.user_id == current_user.id).first()
+
+
     product = db.query(model.Product).filter(model.Product.id == product_id).first()
+
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
     if product.stock < quantity:
         raise HTTPException(status_code=400,detail="Insufficient stock")
-    
+        
+
     new = model.Order(
         name = product.name,
         brand = product.brand,
@@ -362,24 +385,31 @@ def Place_Order(quantity:int,product_id:int ,background_tasks:BackgroundTasks ,d
         user_id = current_user.id,
         Product_id = product.id
         )
+        
+
+    if existing:
+        raise HTTPException(status_code=400,detail="Product already present in orders")
+    
+    db.query(model.Product).filter(model.Product.id == product_id).update({model.Product.stock: model.Product.stock - quantity})
+
+
+    
     db.add(new)
-    model.Product.stock -= quantity
     db.commit()
     db.refresh(new)
 
     background_tasks.add_task(order, current_user.email)
 
-
-
     return {
-        'name' :product.name,
+        'name' :product.name,  
         'brand' : product.brand,
         'price' : product.price,
         'quantity': quantity,
         'user_id' : current_user.id,
         'Product_id' : product.id
-
     }
+
+
 
 
 @app.get("/order", tags=["shopping"])
@@ -396,3 +426,15 @@ def get_orders(
 
     return order
 
+@app.delete("/remove_orders/{id}",tags=['shopping'])
+def delete_order(id:int,db:Session=Depends(get_db),current_user:model.User = Depends(current_user)):
+    order = db.query(model.Order).filter(model.Order.Product_id == id).first()
+    if not order:
+        raise HTTPException(status_code=400,detail=f'No order with this {id} id')
+    
+    db.query(model.Product).filter(model.Product.id == id).update({model.Product.stock: model.Product.stock + order.quantity})
+    
+
+    db.delete(order)
+    db.commit()
+    return {'msg':"Order removed"}
