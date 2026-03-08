@@ -222,7 +222,7 @@ def delete(id:int, db:Session = Depends(get_db),current_user: model.User = Depen
 #!--------Store----------
 
 
-@app.post("/admin/", response_model=schemas.ProductOut,tags=["Store"])
+@app.post("/admin", response_model=schemas.ProductOut,tags=["Store"])
 def add_product(product:schemas.ProductCreate, db: Session = Depends(get_db),current_user: model.User = Depends(current_user)):
 
     if current_user.role != "admin":
@@ -432,7 +432,7 @@ def delete_order(id:int,db:Session=Depends(get_db),current_user:model.User = Dep
     if not order:
         raise HTTPException(status_code=400,detail=f'No order with this {id} id')
     
-    db.query(model.Product).filter(model.Product.id == id).update({model.Product.stock: model.Product.stock + order.quantity})
+    db.query(model.Product).filter(model.Product.id == id).update({model.Product.stock: model.Product.stock + model.Order.quantity})
     
 
     db.delete(order)
