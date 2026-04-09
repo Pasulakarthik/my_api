@@ -171,7 +171,7 @@ def current_user(token:str= Depends(Oauth2_scheme) , db:Session = Depends(get_db
 
 @app.get("/me",tags=["signin"])
 def protected_route(current_user: dict = Depends(current_user)):
-    return {"mes":f"Hello, {current_user['name']} | You accessed a protected route"}
+    return {"mes":f"Hello, {current_user.name} | You accessed a protected route"}
 
 
 
