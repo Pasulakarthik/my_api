@@ -105,7 +105,7 @@ def Filter_products(
 #!--------User----------
 
 
-@app.post("/register",tags=["signin"])
+@app.post("/register",tags=["Signin"])
 def register(user:schemas.UserCreate ,background_tasks:BackgroundTasks ,db:Session = Depends(get_db)):
     existing = db.query(model.User).filter(model.User.email == user.email).first()
     if existing:
@@ -128,7 +128,7 @@ def register(user:schemas.UserCreate ,background_tasks:BackgroundTasks ,db:Sessi
     return {"id":new_user.id , "name": new_user.name ,"email": new_user.email , "role": new_user.role}
 
 
-@app.post("/login",tags=["signin"])
+@app.post("/login",tags=["Signin"])
 def login(form_data: OAuth2PasswordRequestForm = Depends(),db:Session = Depends(get_db)):
     user = db.query(model.User).filter(model.User.name == form_data.username).first()
     if not user:
@@ -169,7 +169,7 @@ def current_user(token:str= Depends(Oauth2_scheme) , db:Session = Depends(get_db
     
     return user
 
-@app.get("/me",tags=["signin"])
+@app.get("/me",tags=["Signin"])
 def protected_route(current_user: dict = Depends(current_user)):
     return {"mes":f"Hello, {current_user.name} | You accessed a protected route"}
 
@@ -186,7 +186,7 @@ def require_roles(allowed_roles:list[str]):
     return role_check
 
 
-@app.get("/profile",tags=["signin"])
+@app.get("/profile",tags=["Signin"])
 def profile(current_user: dict =Depends(require_roles(["user","admin"]))):
     return{"msg":f"Profile of {current_user.name} ({current_user.role})"}
 
@@ -197,13 +197,13 @@ def admin_only(current_user: model.User = Depends(current_user)):
     
     return current_user
 
-@app.get("/admin",tags=["signin"])
+@app.get("/admin",tags=["Signin"])
 def get_all_users_and_admins(user : model.User = Depends(admin_only),db:Session = Depends(get_db)):
 
     return db.query(model.User).all()
 
 
-@app.delete("/Delete_User",tags=["signin"])
+@app.delete("/Delete_User",tags=["Signin"])
 def delete(id:int, db:Session = Depends(get_db),current_user: model.User = Depends(current_user)):
 
     if current_user.role != "admin":
