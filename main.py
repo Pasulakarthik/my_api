@@ -299,7 +299,7 @@ def delete_product(product_id: int, db: Session = Depends(get_db),current_user: 
 #?---------------Cart------------------
 
 
-@app.post("/AddToCart/{quantity}",tags=['shopping'])
+@app.post("/AddToCart/{quantity}",tags=['Cart'])
 def AddToCart(quantity:int,product_id:int,db:Session = Depends(get_db), current_user: model.User = Depends(current_user)):
     product = db.query(model.Product).filter(model.Product.id == product_id).first()
     if not product:
@@ -331,7 +331,7 @@ def AddToCart(quantity:int,product_id:int,db:Session = Depends(get_db), current_
     }
 
 
-@app.get("/cart", tags=["shopping"])
+@app.get("/cart", tags=["Cart"])
 def get_cart(
     db: Session = Depends(get_db),
     current_user: model.User = Depends(current_user)
@@ -345,7 +345,7 @@ def get_cart(
 
     return cart
 
-@app.delete("/remove_cart/{id}",tags=['shopping'])
+@app.delete("/remove_cart/{id}",tags=['Cart'])
 def delete_cart(id: int, db:Session = Depends(get_db),current_user: model.User = Depends(current_user)):
     cart = db.query(model.Cart).filter(model.Cart.id == id).first()
     if not cart:
@@ -363,7 +363,7 @@ def delete_cart(id: int, db:Session = Depends(get_db),current_user: model.User =
 def order(email:str,current_user: model.User = Depends(current_user) ):
     logging.info(f"order placed by the user with  gmail {email}")
 
-@app.post("/order",tags=['shopping'])
+@app.post("/order",tags=['Order'])
 def Place_Order(quantity:int,product_id:int ,background_tasks:BackgroundTasks ,db:Session = Depends(get_db), current_user: model.User = Depends(current_user)):
     existing = db.query(model.Order).filter(model.Order.Product_id == product_id,model.Order.user_id == current_user.id).first()
 
@@ -412,7 +412,7 @@ def Place_Order(quantity:int,product_id:int ,background_tasks:BackgroundTasks ,d
 
 
 
-@app.get("/order", tags=["shopping"])
+@app.get("/order", tags=["Order"])
 def get_orders(
     db: Session = Depends(get_db),
     current_user: model.User = Depends(current_user)
@@ -426,7 +426,7 @@ def get_orders(
 
     return order
 
-@app.delete("/remove_orders/{id}",tags=['shopping'])
+@app.delete("/remove_orders/{id}",tags=['Order'])
 def delete_order(id:int,db:Session=Depends(get_db),current_user:model.User = Depends(current_user)):
     order = db.query(model.Order).filter(model.Order.Product_id == id).first()
     if not order:
